@@ -37,8 +37,6 @@ IN THE SOFTWARE.
 #include <stdlib.h>
 #include <string.h>
 
-typedef bool (*filter_function)(const char*);
-
 typedef enum {
     BH_INFO,
     BH_WARN,
@@ -55,6 +53,10 @@ const char* bh_level_name[] = { "INFO", "WARN", "ERROR" };
         printf(__VA_ARGS__);                                                                                           \
         printf("\n");                                                                                                  \
     }
+
+///////////
+// PATHS //
+///////////
 
 typedef char* BHPath;
 
@@ -88,16 +90,6 @@ static inline void bh_add_path(BHPathArray* arr, BHPath path)
     arr->paths[arr->len] = p;
     arr->len++;
 }
-
-typedef struct {
-    char* out;
-    char* cc;
-    BHPathArray src;
-    BHPathArray include;
-    /* string_list_t cflags; */
-    /* string_list_t ldflags; */
-    /* string_list_t defines; */
-} target_t;
 
 static inline bool bh_read_dir(const char* path, BHPathArray* files, BHPathArray* dirs)
 {
@@ -156,7 +148,10 @@ static inline bool bh_read_dir_recursive(const char* path, BHPathArray* files)
     return true;
 }
 
-static inline BHPathArray bh_filter_paths(BHPathArray* paths, filter_function f) {
+typedef bool (*filter_function)(const char*);
+
+static inline BHPathArray bh_filter_paths(BHPathArray* paths, filter_function f)
+{
     BHPathArray filtered = bh_make_path_arr();
     for (size_t i = 0; i < paths->len; i++) {
         if (f(paths->paths[i])) {
@@ -166,5 +161,41 @@ static inline BHPathArray bh_filter_paths(BHPathArray* paths, filter_function f)
 
     return filtered;
 }
+
+//////////
+// UTIL //
+//////////
+
+static inline char* bh_join_strings(const char** strs, size_t count)
+{
+    size_t size = count;
+    for (size_t i = 0; i < count; i++) {
+        size += strlen(strs[i]);
+    }
+
+    char* final = (char*)BH_MALLOC(size);
+    final[0] = 0;
+    strcat(final, strs[0]);
+    for (size_t i = 1; i < count; i++) {
+        strcat(final, " ");
+        strcat(final, strs[i]);
+    }
+
+    return final;
+}
+
+///////////////
+// COMPILING //
+///////////////
+
+typedef struct {
+    char* out;
+    char* cc;
+    BHPathArray src;
+    BHPathArray include;
+    /* string_list_t cflags; */
+    /* string_list_t ldflags; */
+    /* string_list_t defines; */
+} target_t;
 
 #endif // !BUILD_H_

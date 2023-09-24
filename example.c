@@ -1,9 +1,7 @@
 #include "build.h"
 #include <stdio.h>
 
-bool ends_with_c(const char* p) {
-    return !strcmp(&p[strlen(p) - 2], ".c");
-}
+bool ends_with_c(const char* p) { return !strcmp(&p[strlen(p) - 2], ".c"); }
 
 int main(void)
 {
@@ -16,6 +14,10 @@ int main(void)
         puts(filtered.paths[i]);
     }
 
+    char* f = bh_join_strings(filtered.paths, filtered.len);
+    puts(f);
+
+    free(f);
     bh_free_path_arr(&files);
     bh_free_path_arr(&filtered);
 
