@@ -37,6 +37,28 @@ IN THE SOFTWARE.
 #include <stdlib.h>
 #include <string.h>
 
+//////////
+// UTIL //
+//////////
+
+static inline char* bh_join_strings(const char** strs, size_t count)
+{
+    size_t size = count;
+    for (size_t i = 0; i < count; i++) {
+        size += strlen(strs[i]);
+    }
+
+    char* final = (char*)BH_MALLOC(size);
+    final[0] = 0;
+    strcat(final, strs[0]);
+    for (size_t i = 1; i < count; i++) {
+        strcat(final, " ");
+        strcat(final, strs[i]);
+    }
+
+    return final;
+}
+
 typedef enum {
     BH_INFO,
     BH_WARN,
@@ -162,26 +184,41 @@ static inline BHPathArray bh_filter_paths(BHPathArray* paths, filter_function f)
     return filtered;
 }
 
-//////////
-// UTIL //
-//////////
+///////////
+// FLAGS //
+///////////
 
-static inline char* bh_join_strings(const char** strs, size_t count)
+typedef char* BHFlag;
+
+typedef struct {
+    BHFlag* flags;
+    size_t len;
+} BHFlagArray;
+
+static inline BHFlagArray bh_make_flag_arr()
 {
-    size_t size = count;
-    for (size_t i = 0; i < count; i++) {
-        size += strlen(strs[i]);
-    }
+    BHFlagArray a = {
+        .flags = NULL,
+        .len = 0,
+    };
+    return a;
+}
 
-    char* final = (char*)BH_MALLOC(size);
-    final[0] = 0;
-    strcat(final, strs[0]);
-    for (size_t i = 1; i < count; i++) {
-        strcat(final, " ");
-        strcat(final, strs[i]);
+static inline void bh_free_flag_arr(BHFlagArray* arr)
+{
+    for (size_t i = 0; i < arr->len; i++) {
+        BH_FREE(arr->flags[i]);
     }
+    BH_FREE(arr->flags);
+}
 
-    return final;
+static inline void bh_add_flag(BHFlagArray* arr, BHFlag flag)
+{
+    BHFlag f = (BHFlag)BH_MALLOC(strlen(flag) + 1);
+    strcpy(f, flag);
+    arr->flags = (BHFlag*)BH_REALLOC(arr->flags, (arr->len + 1) * sizeof(BHFlag));
+    arr->flags[arr->len] = f;
+    arr->len++;
 }
 
 ///////////////
@@ -193,9 +230,9 @@ typedef struct {
     char* cc;
     BHPathArray src;
     BHPathArray include;
-    /* string_list_t cflags; */
-    /* string_list_t ldflags; */
-    /* string_list_t defines; */
+    BHFlagArray cflags;
+    BHFlagArray ldflags;
+    BHFlagArray defines;
 } target_t;
 
 #endif // !BUILD_H_
