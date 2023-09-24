@@ -37,6 +37,8 @@ IN THE SOFTWARE.
 #include <stdlib.h>
 #include <string.h>
 
+typedef bool (*filter_function)(const char*);
+
 typedef enum {
     BH_INFO,
     BH_WARN,
@@ -80,8 +82,10 @@ static inline void bh_free_path_arr(BHPathArray* arr)
 
 static inline void bh_add_path(BHPathArray* arr, BHPath path)
 {
+    BHPath p = (BHPath)BH_MALLOC(strlen(path) + 1);
+    strcpy(p, path);
     arr->paths = (BHPath*)BH_REALLOC(arr->paths, (arr->len + 1) * sizeof(BHPath));
-    arr->paths[arr->len] = path;
+    arr->paths[arr->len] = p;
     arr->len++;
 }
 
@@ -121,6 +125,7 @@ static inline bool bh_read_dir(const char* path, BHPathArray* files, BHPathArray
             strcat(entry, "/");
             strcat(entry, dr->d_name);
             bh_add_path(files, entry);
+            free(entry);
         } else if (dr->d_type == DT_DIR && dr->d_name[0] != '.') {
             char* entry = (char*)BH_MALLOC(strlen(path) + strlen(dr->d_name) + 2);
             entry[0] = 0;
@@ -128,6 +133,7 @@ static inline bool bh_read_dir(const char* path, BHPathArray* files, BHPathArray
             strcat(entry, "/");
             strcat(entry, dr->d_name);
             bh_add_path(dirs, entry);
+            free(entry);
         }
 
         dr = readdir(dir);
@@ -148,6 +154,17 @@ static inline bool bh_read_dir_recursive(const char* path, BHPathArray* files)
     }
     bh_free_path_arr(&dirs);
     return true;
+}
+
+static inline BHPathArray bh_filter_paths(BHPathArray* paths, filter_function f) {
+    BHPathArray filtered = bh_make_path_arr();
+    for (size_t i = 0; i < paths->len; i++) {
+        if (f(paths->paths[i])) {
+            bh_add_path(&filtered, paths->paths[i]);
+        }
+    }
+
+    return filtered;
 }
 
 #endif // !BUILD_H_
