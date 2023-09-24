@@ -61,7 +61,7 @@ typedef struct {
     size_t len;
 } BHPathArray;
 
-BHPathArray bh_make_path_arr()
+static inline BHPathArray bh_make_path_arr()
 {
     BHPathArray a = {
         .paths = NULL,
@@ -70,14 +70,15 @@ BHPathArray bh_make_path_arr()
     return a;
 }
 
-void bh_free_path_arr(BHPathArray* arr) {
+static inline void bh_free_path_arr(BHPathArray* arr)
+{
     for (size_t i = 0; i < arr->len; i++) {
         BH_FREE(arr->paths[i]);
     }
     BH_FREE(arr->paths);
 }
 
-void bh_add_path(BHPathArray* arr, BHPath path)
+static inline void bh_add_path(BHPathArray* arr, BHPath path)
 {
     arr->paths = (BHPath*)BH_REALLOC(arr->paths, (arr->len + 1) * sizeof(BHPath));
     arr->paths[arr->len] = path;
@@ -94,12 +95,12 @@ typedef struct {
     /* string_list_t defines; */
 } target_t;
 
-bool bh_read_dir(const char* path, BHPathArray* files, BHPathArray* dirs)
+static inline bool bh_read_dir(const char* path, BHPathArray* files, BHPathArray* dirs)
 {
     DIR* dir = opendir(path);
     if (dir == NULL) {
         char log[1000];
-        perror(&log);
+        perror(log);
         puts(log);
         BH_LOG(BH_ERROR, "could not open dir %s", path);
         return false;
@@ -108,7 +109,7 @@ bool bh_read_dir(const char* path, BHPathArray* files, BHPathArray* dirs)
     struct dirent* dr = readdir(dir);
     if (dr == NULL) {
         char log[1000];
-        perror(&log);
+        perror(log);
         puts(log);
         BH_LOG(BH_ERROR, "could not read dir %s", path);
     }
@@ -133,6 +134,19 @@ bool bh_read_dir(const char* path, BHPathArray* files, BHPathArray* dirs)
     }
     closedir(dir);
 
+    return true;
+}
+
+static inline bool bh_read_dir_recursive(const char* path, BHPathArray* files)
+{
+    BHPathArray dirs = bh_make_path_arr();
+    if (!bh_read_dir(path, files, &dirs)) {
+        return false;
+    }
+    for (size_t i = 0; i < dirs.len; i++) {
+        bh_read_dir_recursive(dirs.paths[i], files);
+    }
+    bh_free_path_arr(&dirs);
     return true;
 }
 

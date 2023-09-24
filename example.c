@@ -3,23 +3,15 @@
 
 int main(void)
 {
-    BHPathArray a = bh_make_path_arr();
-    BHPathArray b = bh_make_path_arr();
-    bh_read_dir("/home/paul/notes", &a, &b);
+    BHPathArray files = bh_make_path_arr();
 
-    printf("%lu\n", a.len);
-    printf("%lu\n", b.len);
+    bh_read_dir_recursive("/home/paul/notes", &files);
 
-    for (size_t i = 0; i < a.len; i++) {
-        puts(a.paths[i]);
+    for (size_t i = 0; i < files.len; i++) {
+        puts(files.paths[i]);
     }
 
-    for (size_t i = 0; i < b.len; i++) {
-        puts(b.paths[i]);
-    }
-
-    bh_free_path_arr(&a);
-    bh_free_path_arr(&b);
+    bh_free_path_arr(&files);
 
     return EXIT_SUCCESS;
 }
