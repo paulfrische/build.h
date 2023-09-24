@@ -54,71 +54,47 @@ const char* bh_level_name[] = { "INFO", "WARN", "ERROR" };
         printf("\n");                                                                                                  \
     }
 
+typedef char* BHPath;
+
 typedef struct {
-    char** content;
-    unsigned int size;
-} string_list_t;
+    BHPath* paths;
+    size_t len;
+} BHPathArray;
 
-string_list_t bh_string_list_init()
+BHPathArray bh_make_path_arr()
 {
-    string_list_t l = {
-        .content = (char**)malloc(sizeof(char*)),
-        .size = 0,
+    BHPathArray a = {
+        .paths = NULL,
+        .len = 0,
     };
-    return l;
+    return a;
 }
 
-void bh_string_list_add(string_list_t* l, char* str)
-{
-    l->content = (char**)BH_REALLOC(l->content, l->size + sizeof(char*));
-    *(l->content + l->size) = str;
-    l->size++;
+void bh_free_path_arr(BHPathArray* arr) {
+    for (size_t i = 0; i < arr->len; i++) {
+        BH_FREE(arr->paths[i]);
+    }
+    BH_FREE(arr->paths);
 }
 
-void bh_string_list_free(string_list_t* l) { BH_FREE(l->content); }
-
-char* bh_string_from_list(string_list_t* l)
+void bh_add_path(BHPathArray* arr, BHPath path)
 {
-    unsigned int size = 1;
-    for (unsigned int i = 0; i < l->size; i++) {
-        puts(l->content[i]);
-        size += strlen(*(l->content + i));
-    }
-
-    printf("string size: %i\n", size);
-    char* s = (char*)BH_MALLOC(size);
-    memset(s, 0, size);
-    for (unsigned int i = 0; i < l->size; i++) {
-        strcat(s, *(l->content + i));
-    }
-    return s;
+    arr->paths = (BHPath*)BH_REALLOC(arr->paths, (arr->len + 1) * sizeof(BHPath));
+    arr->paths[arr->len] = path;
+    arr->len++;
 }
 
 typedef struct {
     char* out;
     char* cc;
-    string_list_t src;
-    string_list_t include;
-    string_list_t cflags;
-    string_list_t ldflags;
-    string_list_t defines;
+    BHPathArray src;
+    BHPathArray include;
+    /* string_list_t cflags; */
+    /* string_list_t ldflags; */
+    /* string_list_t defines; */
 } target_t;
 
-target_t bh_target_init()
-{
-    target_t t = {
-        .out = NULL,
-        .cc = "cc",
-        .include = bh_string_list_init(),
-        .cflags = bh_string_list_init(),
-        .ldflags = bh_string_list_init(),
-        .defines = bh_string_list_init(),
-    };
-
-    return t;
-}
-
-bool bh_read_dir(const char* path, string_list_t* files, string_list_t* dirs)
+bool bh_read_dir(const char* path, BHPathArray* files, BHPathArray* dirs)
 {
     DIR* dir = opendir(path);
     if (dir == NULL) {
@@ -143,18 +119,19 @@ bool bh_read_dir(const char* path, string_list_t* files, string_list_t* dirs)
             strcat(entry, path);
             strcat(entry, "/");
             strcat(entry, dr->d_name);
-            bh_string_list_add(files, entry);
+            bh_add_path(files, entry);
         } else if (dr->d_type == DT_DIR && dr->d_name[0] != '.') {
             char* entry = (char*)BH_MALLOC(strlen(path) + strlen(dr->d_name) + 2);
             entry[0] = 0;
             strcat(entry, path);
             strcat(entry, "/");
             strcat(entry, dr->d_name);
-            bh_string_list_add(dirs, entry);
+            bh_add_path(dirs, entry);
         }
 
         dr = readdir(dir);
     }
+    closedir(dir);
 
     return true;
 }

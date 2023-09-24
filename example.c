@@ -3,19 +3,23 @@
 
 int main(void)
 {
-    string_list_t a = bh_string_list_init();
-    string_list_t b = bh_string_list_init();
+    BHPathArray a = bh_make_path_arr();
+    BHPathArray b = bh_make_path_arr();
     bh_read_dir("/home/paul/notes", &a, &b);
 
-    printf("%i\n", a.size);
-    printf("%i\n", b.size);
+    printf("%lu\n", a.len);
+    printf("%lu\n", b.len);
 
-    puts(bh_string_from_list(&a));
-    puts(bh_string_from_list(&b));
+    for (size_t i = 0; i < a.len; i++) {
+        puts(a.paths[i]);
+    }
 
-    bh_string_list_free(&a);
-    bh_string_list_free(&b);
+    for (size_t i = 0; i < b.len; i++) {
+        puts(b.paths[i]);
+    }
 
-    puts("the end");
+    bh_free_path_arr(&a);
+    bh_free_path_arr(&b);
+
     return EXIT_SUCCESS;
 }
